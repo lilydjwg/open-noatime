@@ -39,3 +39,20 @@ redhook::hook! {
   }
 }
 
+redhook::hook! {
+  unsafe fn __open64_2(
+    path: *const c_char,
+    flags: i32
+  ) -> i32 => fileopen64_2 {
+    let ret = redhook::real!(__open64_2)(
+      path, flags | O_NOATIME
+    );
+
+    if ret < 0 && Error::last_os_error().kind() == ErrorKind::PermissionDenied {
+      redhook::real!(__open64_2)(path, flags)
+    } else {
+      ret
+    }
+  }
+}
+
